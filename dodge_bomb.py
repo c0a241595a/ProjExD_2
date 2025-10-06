@@ -36,6 +36,17 @@ def gameover(screen: pg.Surface):
     pg.display.update()
     time.sleep(5)  # 5秒待機
 
+def init_bb_imgs():
+    bb_imgs = []
+    for r in range(1, 11):
+        bb_img = pg.Surface((20*r, 20*r))
+        bb_img.set_colorkey((0, 0, 0))
+        pg.draw.circle(bb_img, (255, 0, 0), (10*r, 10*r), 10*r)
+        bb_imgs.append(bb_img)
+    # 加速度のリスト
+    bb_accs = [a for a in range(1, 11)]
+    return bb_imgs, bb_accs
+
 def check_bound(rct: pg.Rect) -> tuple[bool, bool]:
     """
     引数：こうかとんRect or ばくだんRect
@@ -52,6 +63,7 @@ def check_bound(rct: pg.Rect) -> tuple[bool, bool]:
 def main():
     pg.display.set_caption("逃げろ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
+    bb_imgs, bb_accs = init_bb_imgs()
     bg_img = pg.image.load("fig/pg_bg.jpg")    
     kk_img = pg.transform.rotozoom(pg.image.load("fig/3.png"), 0, 0.9)
     kk_rct = kk_img.get_rect()
@@ -83,6 +95,19 @@ def main():
                 sum_mv[0] += mv[0]  # 横方向の移動量を加算
                 sum_mv[1] += mv[1]  # 縦方向の移動量を加算
 
+        #バウンド
+        if check_bound(kk_rct) != (True, True):
+            kk_rct.move_ip(-sum_mv[0], -sum_mv[1])
+        screen.blit(kk_img, kk_rct)
+
+        #爆弾の拡大と加速
+        index = min(tmr // 500, 9)
+        yoko, tate = check_bound(bb_rct)
+        if not yoko:
+            vx *= -1
+        if not tate:
+            vy *= -1
+
         kk_rct.move_ip(sum_mv)
         if check_bound(kk_rct) != (True, True):
             kk_rct.move_ip(-sum_mv[0], -sum_mv[1])
@@ -94,6 +119,17 @@ def main():
         if not tate:  # 縦方向にはみ出ていたら
             vy *= -1
         screen.blit(bb_img, bb_rct)  # 爆弾描画
+        pg.display.update()
+        tmr += 1
+        clock.tick(50)
+
+        #画面に描画
+        bb_img = bb_imgs[index]
+        bb_rct = bb_img.get_rect(center=bb_rct.center) # サイズ変更に合わせてRectを更新
+        avx = vx * (bb_accs[index] )
+        avy = vy * (bb_accs[index] )
+        bb_rct.move_ip(avx, avy)
+        screen.blit(bb_img, bb_rct)
         pg.display.update()
         tmr += 1
         clock.tick(50)
