@@ -1,6 +1,7 @@
 import os
 import random
 import sys
+import time
 import pygame as pg
 
 WIDTH, HEIGHT = 1100, 650
@@ -11,6 +12,29 @@ DELTA = {
     pg.K_RIGHT: (+5, 0),
 }
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+#演習課題
+
+def gameover(screen: pg.Surface):
+    # 画面を黒くするSurfaceを作成し、透明度を設定
+    bg_img = pg.Surface((screen.get_width(), screen.get_height()))
+    pg.draw.rect(bg_img, (0, 0, 0), bg_img.get_rect())
+    bg_img.set_alpha(128)
+
+    #画像を描画
+    screen.blit(bg_img, (0, 0))
+    font = pg.font.Font(None, 80)
+    txt = font.render("Game Over", True, (255, 255, 255))
+    txt_rect = txt.get_rect(center=(screen.get_width()/2, screen.get_height()/2 - 50))
+    screen.blit(txt, txt_rect)
+
+    # 悲しむこうかとん画像
+    sad_kk_img = pg.transform.rotozoom(pg.image.load("fig/8.png"), 0, 2.0)
+    sad_kk_rct = sad_kk_img.get_rect(center=(WIDTH/2, HEIGHT/2 + 100))
+    screen.blit(sad_kk_img, sad_kk_rct)
+    
+    pg.display.update()
+    time.sleep(5)  # 5秒待機
 
 def check_bound(rct: pg.Rect) -> tuple[bool, bool]:
     """
@@ -41,12 +65,15 @@ def main():
     vx, vy = +5, +5  # 爆弾の速度
     clock = pg.time.Clock()
     tmr = 0
+
     while True:
         for event in pg.event.get():
             if event.type == pg.QUIT: 
                 return
         screen.blit(bg_img, [0, 0]) 
-        if kk_rct.colliderect(bb_rct):  # こうかとんと爆弾の衝突判定
+        #衝突判定
+        if kk_rct.colliderect(bb_rct):
+            gameover(screen)
             return  # ゲームオーバー
 
         key_lst = pg.key.get_pressed()
