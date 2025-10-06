@@ -60,12 +60,35 @@ def check_bound(rct: pg.Rect) -> tuple[bool, bool]:
         tate = False
     return yoko, tate
 
+def get_kk_imgs() -> dict[tuple[int, int], pg.Surface]:
+    """
+    移動量タプルに対応するこうかとんの画像を格納した辞書を返す
+    """
+    # 向きの基準となる画像をロード
+    kk_base_img = pg.transform.rotozoom(pg.image.load("fig/3.png"), 0, 0.9)
+    kk_flipped_img = pg.transform.flip(kk_base_img, True, False) # 左右反転
+
+    kk_imgs = {
+        (0, 0): kk_base_img,  # 静止
+        (5, 0): kk_flipped_img,  # 右
+        (5, -5): pg.transform.rotozoom(kk_flipped_img, 45, 1.0),  # 右上
+        (0, -5): pg.transform.rotozoom(kk_flipped_img, 90, 1.0),  # 上
+        (-5, -5): pg.transform.rotozoom(kk_base_img, -45, 1.0), # 左上
+        (-5, 0): kk_base_img,  # 左
+        (-5, 5): pg.transform.rotozoom(kk_base_img, 45, 1.0),  # 左下
+        (0, 5): pg.transform.rotozoom(kk_flipped_img, -90, 1.0), # 下
+        (5, 5): pg.transform.rotozoom(kk_flipped_img, -45, 1.0), # 右下
+    }
+    return kk_imgs
+
+#メイン処理
 def main():
     pg.display.set_caption("逃げろ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
     bb_imgs, bb_accs = init_bb_imgs()
     bg_img = pg.image.load("fig/pg_bg.jpg")    
-    kk_img = pg.transform.rotozoom(pg.image.load("fig/3.png"), 0, 0.9)
+    kk_imgs = get_kk_imgs()
+    kk_img = kk_imgs[(0, 0)]
     kk_rct = kk_img.get_rect()
     kk_rct.center = 300, 200
     bb_img = pg.Surface((20, 20))  # 爆弾用の空Surface
@@ -92,8 +115,16 @@ def main():
         sum_mv = [0, 0]
         for key, mv in DELTA.items():
             if key_lst[key]:
-                sum_mv[0] += mv[0]  # 横方向の移動量を加算
-                sum_mv[1] += mv[1]  # 縦方向の移動量を加算
+                sum_mv[0] += mv[0]
+                sum_mv[1] += mv[1]
+            #if key_lst[pg.K_DOWN]:
+            #    sum_mv[1] += 5
+            #if key_lst[pg.K_LEFT]:
+            #   sum_mv[0] -= 5
+            #if key_lst[pg.K_RIGHT]:
+            #    sum_mv[0] += 5
+        kk_img = kk_imgs[tuple(sum_mv)]
+        kk_rct.move_ip(sum_mv)
 
         #バウンド
         if check_bound(kk_rct) != (True, True):
@@ -107,21 +138,6 @@ def main():
             vx *= -1
         if not tate:
             vy *= -1
-
-        kk_rct.move_ip(sum_mv)
-        if check_bound(kk_rct) != (True, True):
-            kk_rct.move_ip(-sum_mv[0], -sum_mv[1])
-        screen.blit(kk_img, kk_rct)
-        bb_rct.move_ip(vx, vy)  # 爆弾移動
-        yoko, tate = check_bound(bb_rct)
-        if not yoko:  # 横方向にはみ出ていたら
-            vx *= -1
-        if not tate:  # 縦方向にはみ出ていたら
-            vy *= -1
-        screen.blit(bb_img, bb_rct)  # 爆弾描画
-        pg.display.update()
-        tmr += 1
-        clock.tick(50)
 
         #画面に描画
         bb_img = bb_imgs[index]
